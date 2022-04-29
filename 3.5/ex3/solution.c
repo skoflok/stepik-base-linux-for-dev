@@ -33,13 +33,8 @@ int get_ppid(int pid)
 	char buf[256];
 	snprintf(buf, sizeof(buf),"/proc/%s/stat",spid);
 
-	//printf("%s\n", buf);
-
 	if( (fd = fopen(buf, "r")) != NULL) {
 		fscanf(fd, "%*i %*s %*c %i", &ppid);
-//		printf("%d\n", ppid);
-		
-		//sprintf(sppid, "%d", ppid);
 		return ppid;
 	} else {
 		return 0;
