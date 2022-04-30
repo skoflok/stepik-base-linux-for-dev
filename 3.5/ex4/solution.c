@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 	for(i=0; i<n; i++) {
 //		printf("{%i,%i}\n",a[i].pid, a[i].ppid);	
 	}
-	count = counter(pid, a, n);
+	count = counter(pid, a, n) + 1;
 
 	printf("%i\n", count);
 }
