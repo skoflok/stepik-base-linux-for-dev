@@ -68,59 +68,29 @@ int get_parent(const char *spid)
 	return 0;
 }
 
-int count_children(int pid)
-{
-	int n;
-	int max;
-	int count = 0;
-	int ccount = 0;
-	struct dirent **namelist;
-	int i;
-	int ppid;
-	const char * sppid;
-
-	const char * scpid;
-       	int cpid;	
-
-	if(pid==0) {
-		return 0;
-	}
-
-	const char *a[MAX_SIZE];
-
-	n = scandir("/proc/", &namelist, &is_int, alphasort);
-	max = n;
-	if (n < 0){
-
-		perror("scandir");
-	}
-	else {
-		while(n--){
-			scpid = namelist[n]->d_name;
-			a[n] = scpid;
-			free(namelist[n]);
-		}
-	}
-	free(namelist);
-
-	for(i = 0;i<=max;i++ ) {
-		cpid = char_to_int(a[i]);
-		ppid = get_parent(a[i]);
-		if(ppid == pid) {
-			ccount = count_children(cpid); 
-			count = count + 1;
-		}
-	}
-
-	return count;
-}
-
 
 int char_to_int(const char * str)
 {	
 	char *end;
 	int integer = (int) strtol(str, &end, 10);
 	return integer;
+}
+
+int counter(int pid, struct pids *a, int size)
+{
+	int count = 0;
+	int ccount = 0;
+	int i;
+
+	for(i=0; i<size;i++)
+	{
+		if(pid == a[i].ppid) {
+			ccount = counter(a[i].pid, a, size);
+			count = count + 1 + ccount;
+		}
+	}
+
+	return count;
 }
 
 int get_pids(struct pids *a)
@@ -161,10 +131,10 @@ int main(int argc, char *argv[])
 	int i;
 	int count = 0;
 	n = get_pids(a);
-	for(i=0; i<n-1; i++) {
-		printf("{%i,%i}\n",a[i].pid, a[i].ppid);	
+	for(i=0; i<n; i++) {
+//		printf("{%i,%i}\n",a[i].pid, a[i].ppid);	
 	}
-	//count = count_children(pid);
+	count = counter(pid, a, n);
 
 	printf("%i\n", count);
 }
