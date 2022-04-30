@@ -21,6 +21,15 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/types.h>
+
+
+#define MAX_SIZE 100
+
+struct pids {
+	int pid;
+	int ppid;
+};
 
 int is_int(const struct dirent *entry)
 {
@@ -61,10 +70,12 @@ int get_parent(const char *spid)
 
 int count_children(int pid)
 {
+	int n;
+	int max;
 	int count = 0;
 	int ccount = 0;
 	struct dirent **namelist;
-	int n;
+	int i;
 	int ppid;
 	const char * sppid;
 
@@ -75,9 +86,10 @@ int count_children(int pid)
 		return 0;
 	}
 
-	const char *a[100];
+	const char *a[MAX_SIZE];
 
 	n = scandir("/proc/", &namelist, &is_int, alphasort);
+	max = n;
 	if (n < 0){
 
 		perror("scandir");
@@ -85,23 +97,24 @@ int count_children(int pid)
 	else {
 		while(n--){
 			scpid = namelist[n]->d_name;
-			cpid = char_to_int(scpid); 
-			ppid = get_parent(scpid);
-			// printf("%i %i \n", cpid, ppid);
-			if(ppid==pid) {
-				ccount = count_children(cpid);
-				//printf("%i\n",ccount);
-				if(ccount < 0 ) {
-					printf("%i\n", ccount);
-				}
-				count = count + 1 + ccount;
-			}
+			a[n] = scpid;
 			free(namelist[n]);
 		}
 	}
 	free(namelist);
+
+	for(i = 0;i<=max;i++ ) {
+		cpid = char_to_int(a[i]);
+		ppid = get_parent(a[i]);
+		if(ppid == pid) {
+			ccount = count_children(cpid); 
+			count = count + 1;
+		}
+	}
+
 	return count;
 }
+
 
 int char_to_int(const char * str)
 {	
@@ -110,14 +123,48 @@ int char_to_int(const char * str)
 	return integer;
 }
 
+int get_pids(struct pids *a)
+{
+	int n = 0;
+	struct pids p;
+	struct dirent **namelist;
+	int max = 0;
+	const char *scpid;
+	int pid;
+
+	n = scandir("/proc/", &namelist, &is_int, alphasort);
+	max = n;
+	if (n < 0){
+
+		perror("scandir");
+	}
+	else {
+		while(n--){
+			scpid = namelist[n]->d_name;
+			pid = char_to_int(scpid);
+			p.pid = pid;
+			p.ppid = get_parent(scpid);
+			a[n] = p;
+			free(namelist[n]);
+		}
+	}
+	free(namelist);
+	return max;
+}
+
 int main(int argc, char *argv[])
 {
 	const char *spid = argv[1];
-
+	struct pids a[MAX_SIZE];
 	int pid = char_to_int(spid);
-
+	int n;	
+	int i;
 	int count = 0;
-	count = count_children(pid);
+	n = get_pids(a);
+	for(i=0; i<n-1; i++) {
+		printf("{%i,%i}\n",a[i].pid, a[i].ppid);	
+	}
+	//count = count_children(pid);
 
 	printf("%i\n", count);
 }
