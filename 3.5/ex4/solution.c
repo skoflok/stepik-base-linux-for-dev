@@ -43,32 +43,39 @@ int is_int(const struct dirent *entry)
 
 int is_parent(char *spid, int etalon_pid)
 {
+	return 0;
+}
+
+int get_parent(const char *spid)
+{
 	FILE *fd;
 	char buf[256];
 	snprintf(buf, sizeof(buf),"/proc/%s/stat",spid);
 	int ppid;
 	if( (fd = fopen(buf, "r")) != NULL) {
 		fscanf(fd, "%*i %*s %*c %i", &ppid);
-		if(ppid==etalon_pid) {
-			return 1;
-
-		}
+			return ppid;
 	}
 	return 0;
 }
 
-int main(int argc, char *argv[])
+int count_children(int pid)
 {
-	const char *start_path;
-	const char *spid = argv[1];
-
-	int n;
-	struct dirent **namelist;
-
-	char *end;
-	int pid = (int) strtol(spid, &end, 10);
-
 	int count = 0;
+	int ccount = 0;
+	struct dirent **namelist;
+	int n;
+	int ppid;
+	const char * sppid;
+
+	const char * scpid;
+       	int cpid;	
+
+	if(pid==0) {
+		return 0;
+	}
+
+	const char *a[100];
 
 	n = scandir("/proc/", &namelist, &is_int, alphasort);
 	if (n < 0){
@@ -77,13 +84,40 @@ int main(int argc, char *argv[])
 	}
 	else {
 		while(n--){
-			if(is_parent(namelist[n]->d_name, pid)==1) {
-				count = count + 1;
+			scpid = namelist[n]->d_name;
+			cpid = char_to_int(scpid); 
+			ppid = get_parent(scpid);
+			// printf("%i %i \n", cpid, ppid);
+			if(ppid==pid) {
+				ccount = count_children(cpid);
+				//printf("%i\n",ccount);
+				if(ccount < 0 ) {
+					printf("%i\n", ccount);
+				}
+				count = count + 1 + ccount;
 			}
 			free(namelist[n]);
 		}
 	}
 	free(namelist);
+	return count;
+}
+
+int char_to_int(const char * str)
+{	
+	char *end;
+	int integer = (int) strtol(str, &end, 10);
+	return integer;
+}
+
+int main(int argc, char *argv[])
+{
+	const char *spid = argv[1];
+
+	int pid = char_to_int(spid);
+
+	int count = 0;
+	count = count_children(pid);
 
 	printf("%i\n", count);
 }
